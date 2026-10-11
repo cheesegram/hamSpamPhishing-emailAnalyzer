@@ -1,6 +1,6 @@
 # ============================================================
 # 1. IMPORT THE REQUIRED LIBRARIES
-# These imports execute when app.py starts.
+# These imports execute when app.py starts..
 # ============================================================
 
 import os   
