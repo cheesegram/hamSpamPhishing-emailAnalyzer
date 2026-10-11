@@ -53,6 +53,26 @@ function renderResultCard(data) {
         `;
     }
 
+    const confidence = data.confidence || {};
+    const meterOrder = ["Ham", "Phishing", "Spam"];
+    const meterBars = meterOrder.map((name) => {
+        const value = Math.max(0, Math.min(100, Number(confidence[name]) || 0));
+        const slug = name.toLowerCase();
+        return `
+            <div class="meter-row">
+                <div class="meter-top">
+                    <span class="meter-name meter-${slug}">${name}</span>
+                    <span class="meter-value">${value.toFixed(1)}%</span>
+                </div>
+                <div class="meter-track" role="progressbar"
+                     aria-valuenow="${value.toFixed(1)}" aria-valuemin="0"
+                     aria-valuemax="100" aria-label="${name} confidence">
+                    <div class="meter-fill meter-fill-${slug}" style="width: ${value.toFixed(1)}%;"></div>
+                </div>
+            </div>
+        `;
+    }).join("");
+
     resultBox.className = "panel-body result-box";
     resultBox.innerHTML = `
         <div class="result-card ${toneClass}">
@@ -66,11 +86,19 @@ function renderResultCard(data) {
 
             ${translationHtml}
 
-            <div class="result-block">
-                <span class="block-label">Gemini explanation</span>
-                <p class="explanation-text">
-                    ${escapeHtml(data.explanation || "No explanation provided.")}
-                </p>
+            <div class="result-columns">
+                <div class="result-side">
+                    <span class="block-label">Confidence</span>
+                    <div class="meter-list">
+                        ${meterBars}
+                    </div>
+                </div>
+                <div class="result-main">
+                    <span class="block-label">Gemini explanation</span>
+                    <p class="explanation-text">
+                        ${escapeHtml(data.explanation || "No explanation provided.")}
+                    </p>
+                </div>
             </div>
         </div>
     `;

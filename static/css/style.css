@@ -517,6 +517,93 @@ body {
     color: var(--text);
 }
 
+/* --- Confidence meter beside the explanation --- */
+
+.result-columns {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 16px;
+    padding: 14px 16px;
+    background-color: var(--can-cream);
+}
+
+.result-side,
+.result-main {
+    min-width: 0;
+}
+
+.meter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.meter-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.meter-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.meter-name {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.meter-ham {
+    color: var(--ham);
+}
+
+.meter-phishing {
+    color: var(--phishing);
+}
+
+.meter-spam {
+    color: var(--spam);
+}
+
+.meter-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--can-navy);
+}
+
+.meter-track {
+    height: 10px;
+    border: 1px solid var(--can-gold-deep);
+    border-radius: 999px;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+.meter-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    transition: width 0.5s ease;
+}
+
+.meter-fill-ham {
+    background-color: var(--ham);
+}
+
+.meter-fill-phishing {
+    background-color: var(--phishing);
+}
+
+.meter-fill-spam {
+    background-color: var(--spam);
+}
+
 /* --- Gold foot strip under the card content --- */
 
 .result-card::after {
@@ -640,6 +727,10 @@ body {
 
     .result-meta {
         text-align: left;
+    }
+
+    .result-columns {
+        grid-template-columns: 1fr;
     }
 
     .category-badge {

@@ -363,7 +363,26 @@ def predict():
 
 
     # --------------------------------------------------------
-    # 11.7 ASK GEMINI TO EXPLAIN THE ML RESULT
+    # 11.7 COMPUTE THE CATEGORY PROBABILITIES
+    # --------------------------------------------------------
+    # predict_proba() returns one probability per class.
+    # Each value is converted to a 0-100 percentage.
+
+    probabilities = model.predict_proba(
+        email_features
+    )[0]
+
+    confidence = {
+        category_name: round(
+            float(probabilities[label]) * 100,
+            1
+        )
+        for label, category_name in CATEGORY_MAP.items()
+    }
+
+
+    # --------------------------------------------------------
+    # 11.8 ASK GEMINI TO EXPLAIN THE ML RESULT
     # --------------------------------------------------------
 
     try:
@@ -389,6 +408,7 @@ def predict():
 
     return jsonify({
         "category": predicted_category,
+        "confidence": confidence,
         "explanation": explanation,
         "translation_applied": translation_applied,
         "translated_email": translated_email
