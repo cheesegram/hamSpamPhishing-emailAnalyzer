@@ -1,20 +1,29 @@
 /* ============================================================
-   CLEAN EMAIL ANALYZER THEME
-   Simple centered layout: light top bar, white cards,
-   neutral gray background and a single blue accent.
+   SPAM CAN THEME
+   Whole dashboard styled after the SPAM can label:
+   navy panels, gold trim, yellow logo letters, can red.
    ============================================================ */
 
 :root {
-    --bg: #f4f6fa;
+    --bg: #f5efe1;
     --surface: #ffffff;
-    --border: #e4e7ec;
-    --text: #1d2939;
-    --text-muted: #667085;
-    --text-faint: #98a2b3;
+    --border: #ded3ba;
+    --text: #232a55;
+    --text-muted: #5a6285;
+    --text-faint: #8b90ad;
 
-    --accent: #2563eb;
-    --accent-dark: #1d4ed8;
-    --accent-soft: #eff4ff;
+    --accent: #c8102e;
+    --accent-dark: #a50d26;
+    --accent-soft: #fbe4e6;
+
+    --can-navy: #1f2670;
+    --can-navy-deep: #151a52;
+    --can-gold: #e3a008;
+    --can-gold-deep: #b98c1c;
+    --can-yellow: #ffd23f;
+    --can-red: #d8232a;
+    --can-cream: #f7f2e4;
+    --can-pale: #c8cdf2;
 
     --ham: #12b76a;
     --ham-soft: #ecfdf3;
@@ -28,7 +37,9 @@
 
     --radius: 12px;
     --radius-sm: 8px;
-    --shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    --logo-font: "Arial Black", "Archivo Black", Impact,
+                 Haettenschweiler, "Arial Narrow Bold", sans-serif;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
             "Helvetica Neue", Arial, sans-serif;
 }
@@ -59,8 +70,8 @@ body {
 }
 
 .topbar {
-    background-color: var(--surface);
-    border-bottom: 1px solid var(--border);
+    background-color: var(--can-navy);
+    border-bottom: 3px solid var(--can-gold);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -80,11 +91,11 @@ body {
     align-items: center;
     gap: 10px;
     text-decoration: none;
-    color: var(--text);
+    color: #ffffff;
 }
 
 .brand-mark {
-    color: var(--accent);
+    color: var(--can-yellow);
     flex-shrink: 0;
 }
 
@@ -97,7 +108,7 @@ body {
 
 .brand-name-thin {
     font-weight: 400;
-    color: var(--text-muted);
+    color: var(--can-yellow);
     margin-left: 5px;
 }
 
@@ -111,19 +122,34 @@ body {
 
 .page-header {
     margin-bottom: 24px;
+    padding: 20px 22px;
+    border: 3px solid var(--can-gold-deep);
+    border-radius: var(--radius);
+    background-color: var(--can-navy);
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.25);
 }
 
 .page-header h1 {
     margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.4px;
+    font-family: var(--logo-font);
+    font-size: 30px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--can-yellow);
+    text-shadow:
+        -2px -2px 0 var(--can-red),
+        2px -2px 0 var(--can-red),
+        -2px 2px 0 var(--can-red),
+        2px 2px 0 var(--can-red),
+        0 3px 0 #7a1015,
+        0 5px 6px rgba(0, 0, 0, 0.45);
 }
 
 .page-header p {
-    margin: 6px 0 0;
+    margin: 8px 0 0;
     font-size: 14px;
-    color: var(--text-muted);
+    color: var(--can-pale);
     max-width: 620px;
 }
 
@@ -132,13 +158,13 @@ body {
     align-items: center;
     gap: 7px;
     padding: 6px 12px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--can-gold);
     border-radius: 999px;
-    background-color: var(--surface);
+    background-color: rgba(255, 255, 255, 0.06);
     box-shadow: var(--shadow);
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--can-cream);
     white-space: nowrap;
 }
 
@@ -146,13 +172,13 @@ body {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background-color: var(--ham);
+    background-color: var(--can-gold);
     animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(18, 183, 106, 0.35); }
-    50% { box-shadow: 0 0 0 4px rgba(18, 183, 106, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(227, 160, 8, 0.35); }
+    50% { box-shadow: 0 0 0 4px rgba(227, 160, 8, 0); }
 }
 
 /* ============================================================
@@ -171,10 +197,10 @@ body {
     flex-direction: column;
     gap: 4px;
     padding: 15px 17px;
-    background-color: var(--surface);
-    border: 1px solid var(--border);
+    background-color: var(--can-navy);
+    border: 2px solid var(--can-gold-deep);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 5px rgba(16, 24, 40, 0.22);
 }
 
 .stat-label {
@@ -182,22 +208,22 @@ body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--text-muted);
+    color: var(--can-gold);
 }
 
 .stat-value {
     font-size: 15px;
     font-weight: 700;
-    color: var(--text);
+    color: #ffffff;
 }
 
 .stat-value.status-ok {
-    color: var(--ham);
+    color: #7df0ae;
 }
 
 .stat-note {
     font-size: 12px;
-    color: var(--text-faint);
+    color: var(--can-pale);
 }
 
 /* ============================================================
@@ -211,27 +237,39 @@ body {
 }
 
 .panel {
-    background-color: var(--surface);
-    border: 1px solid var(--border);
+    background-color: var(--can-cream);
+    border: 3px solid var(--can-gold-deep);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.22);
     overflow: hidden;
 }
 
 .panel-header {
-    padding: 18px 20px 0;
+    padding: 16px 20px 14px;
+    background-color: var(--can-navy);
+    border-bottom: 3px solid var(--can-gold);
 }
 
 .panel-header h2 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 700;
+    font-family: var(--logo-font);
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--can-yellow);
+    text-shadow:
+        -1px -1px 0 var(--can-red),
+        1px -1px 0 var(--can-red),
+        -1px 1px 0 var(--can-red),
+        1px 1px 0 var(--can-red),
+        0 2px 0 #7a1015;
 }
 
 .panel-header p {
     margin: 4px 0 0;
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--can-pale);
 }
 
 .panel-body {
@@ -246,8 +284,10 @@ body {
     display: block;
     margin-bottom: 6px;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--can-navy);
 }
 
 .email-textarea {
@@ -255,7 +295,7 @@ body {
     width: 100%;
     min-height: 190px;
     padding: 12px 14px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--can-gold-deep);
     border-radius: var(--radius-sm);
     background-color: var(--surface);
     font-family: inherit;
@@ -288,21 +328,23 @@ body {
 
 .sample-chip {
     padding: 6px 12px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--can-navy);
     border-radius: 999px;
-    background-color: var(--bg);
+    background-color: var(--can-navy);
     font-family: inherit;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--can-yellow);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .sample-chip:hover {
-    border-color: var(--accent);
-    background-color: var(--accent-soft);
-    color: var(--accent);
+    border-color: var(--can-navy-deep);
+    background-color: var(--can-navy-deep);
+    color: #ffffff;
 }
 
 .form-footer {
@@ -313,13 +355,16 @@ body {
 
 .btn-primary {
     padding: 10px 22px;
-    border: none;
+    border: 2px solid #7a1015;
     border-radius: var(--radius-sm);
     background-color: var(--accent);
-    font-family: inherit;
+    font-family: var(--logo-font);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     cursor: pointer;
     transition: background-color 0.15s ease;
 }
@@ -333,4 +378,272 @@ body {
     cursor: not-allowed;
 }
 
-/* @@CSS-RESULTS@@ */
+/* ============================================================
+   CLASSIFICATION RESULT - SPAM CAN STYLE
+   Navy label, gold trim, yellow logo letters with red outline.
+   ============================================================ */
+
+.result-box {
+    min-height: 280px;
+}
+
+/* --- Result card: the navy can label --- */
+
+.result-card {
+    padding: 0;
+    border: 3px solid var(--can-gold);
+    border-radius: var(--radius-sm);
+    background-color: var(--can-navy);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.25);
+    overflow: hidden;
+}
+
+.result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    padding: 14px 16px;
+    border-bottom: 3px solid var(--can-gold);
+}
+
+/* --- Category badge: yellow logo letters, red outline --- */
+
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px;
+    background: none;
+    border: none;
+    font-family: var(--logo-font);
+    font-size: 30px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--can-yellow);
+    text-shadow:
+        -2px -2px 0 var(--can-red),
+        2px -2px 0 var(--can-red),
+        -2px 2px 0 var(--can-red),
+        2px 2px 0 var(--can-red),
+        0 3px 0 #7a1015,
+        0 5px 6px rgba(0, 0, 0, 0.45);
+}
+
+.badge-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: var(--can-gold);
+}
+
+.tone-phishing .badge-dot {
+    background-color: var(--can-red);
+}
+
+.tone-spam .badge-dot {
+    background-color: #fff6df;
+}
+
+.result-meta {
+    font-size: 11px;
+    color: var(--can-pale);
+    text-align: right;
+}
+
+/* --- Content blocks sit on the cream label area --- */
+
+.result-block {
+    margin: 0;
+    padding: 10px 16px;
+    background-color: var(--can-cream);
+}
+
+.result-block:first-of-type {
+    padding-top: 14px;
+}
+
+.result-block:last-child {
+    padding-bottom: 14px;
+}
+
+.block-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--can-navy);
+}
+
+.email-quote {
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 4px solid var(--can-gold);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background-color: #ffffff;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.translation-text {
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 4px solid var(--can-gold);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background-color: #ffffff;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.explanation-text {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background-color: #ffffff;
+    border: 1px solid #d9d2bd;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+}
+
+/* --- Gold foot strip under the card content --- */
+
+.result-card::after {
+    content: "";
+    display: block;
+    height: 6px;
+    background-color: var(--can-gold);
+}
+
+/* --- Empty / loading / error states (light) --- */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 240px;
+    padding: 24px;
+    text-align: center;
+}
+
+.empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 4px;
+    border-radius: 50%;
+    background-color: var(--can-navy);
+    color: var(--can-yellow);
+    font-size: 20px;
+}
+
+.empty-state strong {
+    font-size: 14px;
+    color: var(--text);
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    max-width: 380px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 240px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.error-state {
+    padding: 16px;
+    border: 1px solid var(--phishing-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--phishing-soft);
+}
+
+.error-state strong {
+    display: block;
+    font-size: 13px;
+    color: var(--phishing);
+}
+
+.error-state p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+@media (max-width: 640px) {
+    .topbar-inner {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .page-header h1 {
+        font-size: 24px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .form-footer {
+        justify-content: stretch;
+    }
+
+    .btn-primary {
+        width: 100%;
+    }
+
+    .result-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .result-meta {
+        text-align: left;
+    }
+
+    .category-badge {
+        font-size: 24px;
+    }
+}
+

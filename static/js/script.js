@@ -26,7 +26,7 @@ sampleChips.forEach((chip) => {
 // ------------------------------------------------------------
 // 2. RESULT CARD RENDERER
 // ------------------------------------------------------------
-function renderResultCard(data, originalEmail) {
+function renderResultCard(data) {
     const category = (data.category || "Unknown").toLowerCase();
 
     let badgeText = "Unknown";
@@ -62,11 +62,6 @@ function renderResultCard(data, originalEmail) {
                     ${badgeText}
                 </span>
                 <span class="result-meta">ML classification + AI explanation</span>
-            </div>
-
-            <div class="result-block">
-                <span class="block-label">Your email</span>
-                <blockquote class="email-quote">"${escapeHtml(originalEmail)}"</blockquote>
             </div>
 
             ${translationHtml}
@@ -138,7 +133,7 @@ emailForm.addEventListener("submit", async function (event) {
             );
         }
 
-        renderResultCard(data, email);
+        renderResultCard(data);
 
     } catch (error) {
         resultBox.className = "panel-body result-box";
