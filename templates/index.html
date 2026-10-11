@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Analyzer | Ham, Spam &amp; Phishing Detector</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <script
+        src="{{ url_for('static', filename='js/script.js') }}"
+        defer
+    ></script>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- ============ Top Bar ============ -->
+        <header class="topbar">
+            <div class="topbar-inner">
+                <a href="/" class="brand" title="Email Analyzer">
+                    <svg class="brand-mark" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2l7 4v5c0 5-3.1 8.6-7 11-3.9-2.4-7-6-7-11V6l7-4z"/>
+                    </svg>
+                    <span class="brand-name">Email<span class="brand-name-thin">Analyzer</span></span>
+                </a>
+                <span class="live-pill"><span class="live-dot" aria-hidden="true"></span> Live</span>
+            </div>
+        </header>
+
+        <!-- ============ Main content ============ -->
+        <main class="main">
+
+            <div class="page-header">
+                <h1>Email Analyzer</h1>
+                <p>Detect whether an email is Ham, Spam, or Phishing using TF-IDF + Logistic Regression, with Gemini translation and AI explanation.</p>
+            </div>
+
+            <!-- Overview Cards -->
+            <section class="stats-grid" aria-label="System overview">
+                <article class="stat-card">
+                    <span class="stat-label">Model</span>
+                    <strong class="stat-value">Logistic Regression</strong>
+                    <span class="stat-note">Email classifier</span>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Vectorizer</span>
+                    <strong class="stat-value">TF-IDF</strong>
+                    <span class="stat-note">Trained feature pipeline</span>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Detects</span>
+                    <strong class="stat-value">Ham / Spam / Phishing</strong>
+                    <span class="stat-note">Three email categories</span>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Status</span>
+                    <strong class="stat-value status-ok">Operational</strong>
+                    <span class="stat-note">API key &amp; pipelines ready</span>
+                </article>
+            </section>
+
+            <!-- Workspace -->
+            <section class="content-stack">
+
+                <!-- Analyzer Panel -->
+                <article class="panel">
+                    <header class="panel-header">
+                        <div>
+                            <h2>Analyze an Email</h2>
+                            <p>Paste the full email content below, or load one of the sample emails.</p>
+                        </div>
+                    </header>
+
+                    <form id="emailForm" class="panel-body">
+                        <label class="field-label" for="emailText">Email content</label>
+                        <textarea
+                            id="emailText"
+                            name="email"
+                            class="email-textarea"
+                            maxlength="10000"
+                            placeholder="Paste the full email content here (subject + body)..."
+                            required
+                        ></textarea>
+
+                        <div class="sample-row">
+                            <span class="field-label">Quick samples</span>
+                            <div class="chip-group">
+                                <button type="button" class="sample-chip" data-email="Hi team, please find the meeting minutes from yesterday attached for your review. Let me know if you have any questions. Thanks!">Ham</button>
+                                <button type="button" class="sample-chip" data-email="CONGRATULATIONS! You have WON a FREE cruise vacation! Call 1-800-555-0199 right now to claim your prize. Limited time offer, act fast!">Spam</button>
+                                <button type="button" class="sample-chip" data-email="Dear customer, your bank account has been temporarily locked due to unusual activity. Verify your identity immediately by clicking this link to restore access.">Phishing</button>
+                                <button type="button" class="sample-chip" data-email="Estimado cliente, su cuenta ha sido suspendida por actividad sospechosa. Haga clic en el enlace para verificar su identidad de inmediato.">Multilingual</button>
+                            </div>
+                        </div>
+
+                        <div class="form-footer">
+                            <button type="submit" id="analyzeButton" class="btn-primary">Analyze Email</button>
+                        </div>
+                    </form>
+                </article>
+
+                <!-- Result Panel -->
+                <article class="panel">
+                    <header class="panel-header">
+                        <div>
+                            <h2>Classification Result</h2>
+                            <p>The predicted category and AI explanation will appear here.</p>
+                        </div>
+                    </header>
+
+                    <div id="resultBox" class="panel-body result-box" aria-live="polite">
+                        <div class="empty-state">
+                            <span class="empty-icon" aria-hidden="true">&#9993;</span>
+                            <strong>No analysis yet</strong>
+                            <p>Submit an email to see whether it is Ham, Spam, or Phishing, with a translation and AI explanation.</p>
+                        </div>
+                    </div>
+                </article>
+
+            </section>
+        </main>
+    </div>
+</body>
+</html>
