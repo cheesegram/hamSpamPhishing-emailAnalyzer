@@ -78,21 +78,22 @@
 
                     <form id="emailForm" class="panel-body">
                         <label class="field-label" for="emailText">Email content</label>
-                        <textarea
+                        <div
                             id="emailText"
-                            name="email"
                             class="email-textarea"
-                            maxlength="10000"
-                            placeholder="Paste the full email content here (subject + body)..."
-                            required
-                        ></textarea>
+                            contenteditable="true"
+                            data-placeholder="Paste the full email content here (subject + body)..."
+                            spellcheck="false"
+                        ></div>
+
+                        <input type="hidden" id="emailLinks" name="email_links">
 
                         <div class="sample-row">
                             <span class="field-label">Quick samples</span>
                             <div class="chip-group">
                                 <button type="button" class="sample-chip" data-email="Hi team, please find the meeting minutes from yesterday attached for your review. Let me know if you have any questions. Thanks!">Ham</button>
                                 <button type="button" class="sample-chip" data-email="CONGRATULATIONS! You have WON a FREE cruise vacation! Call 1-800-555-0199 right now to claim your prize. Limited time offer, act fast!">Spam</button>
-                                <button type="button" class="sample-chip" data-email="Dear customer, your bank account has been temporarily locked due to unusual activity. Verify your identity immediately by clicking this link to restore access.">Phishing</button>
+                                <button type="button" class="sample-chip" data-email="Dear customer, your bank account has been temporarily locked due to unusual activity. Verify your identity immediately at https://secure-bank-verify.example.com/login to restore access.">Phishing Link</button>
                                 <button type="button" class="sample-chip" data-email="Estimado cliente, su cuenta ha sido suspendida por actividad sospechosa. Haga clic en el enlace para verificar su identidad de inmediato.">Multilingual</button>
                             </div>
                         </div>
@@ -117,6 +118,24 @@
                             <span class="empty-icon" aria-hidden="true">&#9993;</span>
                             <strong>No analysis yet</strong>
                             <p>Submit an email to see whether it is Ham, Spam, or Phishing, with a translation and AI explanation.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Vision Analysis Panel -->
+                <article class="panel">
+                    <header class="panel-header">
+                        <div>
+                            <h2>Vision Analysis</h2>
+                            <p>Links found in the email are opened in a headless browser and the website screenshot is classified.</p>
+                        </div>
+                    </header>
+
+                    <div id="visionBox" class="panel-body vision-box" aria-live="polite">
+                        <div class="empty-state">
+                            <span class="empty-icon" aria-hidden="true">&#128065;</span>
+                            <strong>No vision analysis yet</strong>
+                            <p>Submit an email containing a link to capture and classify the linked website.</p>
                         </div>
                     </div>
                 </article>

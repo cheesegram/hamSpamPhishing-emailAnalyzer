@@ -7,15 +7,38 @@ import os
 # Reads environment variables such as GEMINI_API_KEY.
 
 import re
-# Provides regular expressions for cleaning URLs, usernames,
-# and extra spaces from tweets.
+# Provides regular expressions for finding links and
+# cleaning extra spaces from emails.
 
 import html
 # Converts HTML entities such as "&amp;" back into normal text.
 
 import json
-# Converts the tweet into a safely quoted JSON string
+# Converts the email into a safely quoted JSON string
 # when placing it inside a Gemini prompt.
+
+import time
+# Pauses briefly so screenshots capture fully loaded pages.
+
+import base64
+# Encodes website screenshots so they can travel inside JSON.
+
+import socket
+import ipaddress
+# Resolves link hostnames and blocks private or local
+# addresses before Selenium opens them.
+
+from io import BytesIO
+# Holds screenshot bytes in memory for resizing.
+
+from urllib.parse import urlparse
+# Splits links into scheme and hostname for safety checks.
+
+import numpy as np
+# Converts screenshots into number arrays for the vision model.
+
+from PIL import Image
+# Resizes screenshots to the size the vision model expects.
 
 import joblib
 # Loads the saved TF-IDF vectorizer and ML model.
@@ -92,6 +115,43 @@ vectorizer = joblib.load(
 )
 # Loads the fitted TF-IDF vectorizer.
 # This must be the same vectorizer used during model training.
+
+
+# ============================================================
+# 5b. LOAD THE VISION MODEL FOR LINK SCREENSHOTS
+# TensorFlow is imported here so the text pipeline still
+# starts even if the vision packages are unavailable.
+# ============================================================
+
+VISION_IMAGE_SIZE = (224, 224)
+# Width and height the MobileNetV2 model was trained on.
+
+VISION_MAX_LINKS = 3
+# Maximum number of links captured per email.
+
+VISION_PAGE_TIMEOUT = 20
+# Seconds Selenium waits for a page to finish loading.
+
+VISION_SETTLE_SECONDS = 2
+# Extra pause so dynamic pages finish rendering.
+
+try:
+    import tensorflow as tf
+
+    from tensorflow.keras.applications.mobilenet_v2 import (  # pyright: ignore[reportMissingImports]
+        preprocess_input as _mobilenet_preprocess
+    )
+
+    vision_model = tf.keras.models.load_model(
+        MODEL_DIR / "mobilenetv2_phishing_model.keras"
+    )
+    # Loads the MobileNetV2 screenshot classifier.
+    # Its single sigmoid output is the phishing score.
+
+except Exception as vision_load_error:
+    print("Vision model unavailable:", vision_load_error)
+    vision_model = None
+    _mobilenet_preprocess = None
 
 
 # ============================================================
@@ -245,6 +305,154 @@ Instructions:
         return "No explanation was generated."
 
     return explanation
+
+
+# ============================================================
+# 9b. VISION HELPER FUNCTIONS
+#
+# These extract links from the email, capture each website
+# with a headless browser, and classify the screenshot.
+# ============================================================
+
+URL_PATTERN = re.compile(
+    r"(https?://[^\s<>'\"()]+|www\.[^\s<>'\"()]+)",
+    re.IGNORECASE
+)
+# Finds http/https links and www addresses in email text.
+
+
+def extract_urls(email):
+    # Find every link candidate in the email.
+    found = URL_PATTERN.findall(str(email))
+
+    cleaned = []
+
+    for raw in found:
+        # Drop trailing punctuation that is not part of a link.
+        url = raw.rstrip(".,;:!?\"'”)]}>")
+
+        # Give www addresses an explicit http scheme.
+        if url.lower().startswith("www."):
+            url = "http://" + url
+
+        # Keep each link only once, up to the limit.
+        if url not in cleaned:
+            cleaned.append(url)
+
+        if len(cleaned) >= VISION_MAX_LINKS:
+            break
+
+    return cleaned
+
+
+def _is_public_url(url):
+    # Only allow links that resolve to a public address.
+    # This blocks localhost, intranet, and cloud metadata IPs.
+    try:
+        parsed = urlparse(url)
+
+        if parsed.scheme not in ("http", "https"):
+            return False
+
+        hostname = parsed.hostname
+
+        if not hostname:
+            return False
+
+        resolved = socket.gethostbyname(hostname)
+        address = ipaddress.ip_address(resolved)
+
+        return not (
+            address.is_private
+            or address.is_loopback
+            or address.is_link_local
+            or address.is_multicast
+            or address.is_reserved
+            or address.is_unspecified
+        )
+
+    except Exception:
+        return False
+
+
+def capture_website_screenshot(url):
+    # Open the link in headless Chrome and photograph it.
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.support.ui import WebDriverWait
+
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1280,900")
+    options.add_argument("--hide-scrollbars")
+
+    driver = webdriver.Chrome(options=options)
+
+    try:
+        driver.set_page_load_timeout(VISION_PAGE_TIMEOUT)
+        driver.get(url)
+
+        # Wait until the browser reports the page as loaded.
+        WebDriverWait(driver, VISION_PAGE_TIMEOUT).until(
+            lambda page: page.execute_script(
+                "return document.readyState"
+            ) == "complete"
+        )
+
+        # Extra pause so dynamic content finishes rendering.
+        time.sleep(VISION_SETTLE_SECONDS)
+
+        return driver.get_screenshot_as_png()
+
+    finally:
+        driver.quit()
+
+
+def classify_website_screenshot(png_bytes):
+    # Resize the screenshot and ask MobileNetV2 for a score.
+    image = (
+        Image.open(BytesIO(png_bytes))
+        .convert("RGB")
+        .resize(VISION_IMAGE_SIZE)
+    )
+
+    features = _mobilenet_preprocess(
+        np.expand_dims(
+            np.asarray(image, dtype=np.float32),
+            axis=0
+        )
+    )
+
+    score = float(vision_model.predict(features, verbose=0)[0][0])
+
+    phishing_probability = round(score * 100, 1)
+    legitimate_probability = round((1.0 - score) * 100, 1)
+
+    verdict = "Phishing" if score >= 0.5 else "Legitimate"
+
+    return verdict, phishing_probability, legitimate_probability
+
+
+def make_display_thumbnail(png_bytes, max_width=760):
+    # Shrink the screenshot into a small JPEG for the page.
+    image = Image.open(BytesIO(png_bytes)).convert("RGB")
+
+    if image.width > max_width:
+        ratio = max_width / image.width
+        image = image.resize(
+            (max_width, int(image.height * ratio))
+        )
+
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=70)
+
+    return (
+        "data:image/jpeg;base64,"
+        + base64.b64encode(buffer.getvalue()).decode("ascii")
+    )
 
 
 # ============================================================
@@ -412,6 +620,81 @@ def predict():
         "explanation": explanation,
         "translation_applied": translation_applied,
         "translated_email": translated_email
+    })
+
+
+# ============================================================
+# 11b. VISION ROUTE
+#
+# This executes after JavaScript sends a POST request
+# to /vision with the same email text.
+# ============================================================
+
+@app.route("/vision", methods=["POST"])
+def vision():
+
+    # Vision needs the loaded MobileNetV2 model.
+    if vision_model is None:
+        return jsonify({
+            "error": "The vision model is unavailable."
+        }), 503
+
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "")
+
+    if not isinstance(email, str) or not email.strip():
+        return jsonify({
+            "error": "Please enter an email."
+        }), 400
+
+    # Find the links inside the email content.
+    urls = extract_urls(email)
+
+    if not urls:
+        return jsonify({
+            "analyses": [],
+            "message": "No links found in the email."
+        })
+
+    analyses = []
+
+    for url in urls:
+        try:
+            # Refuse unsafe or non-public destinations.
+            if not _is_public_url(url):
+                raise ValueError(
+                    "Blocked non-public or unsafe URL."
+                )
+
+            # Photograph the fully loaded website.
+            png = capture_website_screenshot(url)
+
+            # Classify the screenshot as phishing or not.
+            verdict, phishing_probability, legitimate_probability = (
+                classify_website_screenshot(png)
+            )
+
+            analyses.append({
+                "url": url,
+                "verdict": verdict,
+                "phishing_probability": phishing_probability,
+                "legitimate_probability": legitimate_probability,
+                "screenshot": make_display_thumbnail(png)
+            })
+
+        except Exception as error:
+            # One bad link must not hide the other results.
+            print("Vision error for", url, ":", error)
+
+            analyses.append({
+                "url": url,
+                "error": (
+                    "The website could not be captured or analyzed."
+                )
+            })
+
+    return jsonify({
+        "analyses": analyses
     })
 
 
