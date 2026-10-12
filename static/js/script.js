@@ -29,6 +29,8 @@ emailText.addEventListener("paste", function (event) {
     if (!rawText) {
         return;
     }
+    event.preventDefault();
+    const pastedHtml = clipboardData ? clipboardData.getData("text/html") : "";
     const urlPattern = /(https?:\/\/[^\s<>'\"()]+|www\.[^\s<>'\"()]+)/gi;
     const pastedLinks = [];
     let match;
@@ -38,14 +40,54 @@ emailText.addEventListener("paste", function (event) {
             pastedLinks.push(url);
         }
     }
-    let html = rawText.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
-    html = html.replace(urlPattern, function (matched) {
-        const clean = matched.replace(/[.,;:!?]+$/, "").trim();
-        return '<a href="' + escapeHtmlAttr(clean) + '">' + clean + "</a>";
-    });
+    let html = "";
+    if (pastedHtml) {
+        const container = document.createElement("div");
+        container.innerHTML = pastedHtml;
+        const unsafeElements = container.querySelectorAll(
+            "script, style, iframe, object, embed, form"
+        );
+        for (let i = 0; i < unsafeElements.length; i++) {
+            unsafeElements[i].remove();
+        }
+        const elements = container.querySelectorAll("*");
+        for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            const attributes = Array.from(element.attributes);
+            for (let j = 0; j < attributes.length; j++) {
+                const attribute = attributes[j];
+                if (attribute.name.toLowerCase().indexOf("on") === 0) {
+                    element.removeAttribute(attribute.name);
+                }
+            }
+            if (element.tagName.toLowerCase() === "a") {
+                const href = element.getAttribute("href") || "";
+                if (!/^https?:\/\//i.test(href) && !/^www\./i.test(href)) {
+                    element.removeAttribute("href");
+                } else if (/^www\./i.test(href)) {
+                    element.setAttribute("href", "http://" + href);
+                }
+            }
+        }
+        if (container.querySelector("a[href]")) {
+            html = container.innerHTML;
+        } else {
+            html = rawText.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+            html = html.replace(urlPattern, function (matched) {
+                const clean = matched.replace(/[.,;:!?]+$/, "").trim();
+                return '<a href="' + escapeHtmlAttr(clean) + '">' + clean + "</a>";
+            });
+        }
+    } else {
+        html = rawText.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+        html = html.replace(urlPattern, function (matched) {
+            const clean = matched.replace(/[.,;:!?]+$/, "").trim();
+            return '<a href="' + escapeHtmlAttr(clean) + '">' + clean + "</a>";
+        });
+    }
     try {
-        const fragment = document.createRange().createContextualFragment(html);
-        document.execCommand("insertHTML", false, fragment);
+        const fragment = range.createContextualFragment(html);
+        range.insertNode(fragment);
     } catch (error) {
         emailText.innerHTML = rawText;
     }
@@ -272,10 +314,15 @@ function renderVision(analyses) {
         if (isNaN(lv)) lv = 0;
         cards +=
             '<div class="vision-item">' +
+            '<div class="vision-head">' +
+            '<span class="vision-verdict vision-' + vSlug + '">' +
+            '<span class="badge-dot" aria-hidden="true"></span>' +
+            vLabel + " " + (vLabel === "Phishing" ? pv : lv).toFixed(1) + "%" +
+            "</span>" +
+            '<span class="result-meta">Website screenshot analysis</span>' +
+            "</div>" +
             '<div class="vision-shot">' +
-            '<span class="vision-verdict vision-' + vSlug + '">' + vLabel + " " + pv.toFixed(1) + "%</span>" +
             '<img src="' + item.screenshot + '" alt="Screenshot of ' + escapeHtmlAttr(item.url) + '">' +
-            '<span class="vision-overlay">' + escapeHtml(item.url) + "</span>" +
             "</div>" +
             '<div class="vision-content">' +
             '<span class="block-label">Analysis result</span>' +

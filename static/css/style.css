@@ -613,6 +613,100 @@ body {
     background-color: var(--can-gold);
 }
 
+/* ============================================================
+   VISION ANALYSIS
+   Each captured link is presented as its own can-style card.
+   ============================================================ */
+
+.vision-box {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+}
+
+.vision-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.vision-item {
+    overflow: hidden;
+    border: 3px solid var(--can-gold);
+    border-radius: var(--radius-sm);
+    background-color: var(--can-cream);
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.25);
+}
+
+.vision-item::after {
+    content: "";
+    display: block;
+    height: 6px;
+    background-color: var(--can-gold);
+}
+
+.vision-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 3px solid var(--can-gold);
+    background-color: var(--can-navy);
+}
+
+.vision-verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--logo-font);
+    font-size: 26px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--can-yellow);
+    text-shadow:
+        -2px -2px 0 var(--can-red),
+        2px -2px 0 var(--can-red),
+        -2px 2px 0 var(--can-red),
+        2px 2px 0 var(--can-red),
+        0 3px 0 #7a1015,
+        0 5px 6px rgba(0, 0, 0, 0.45);
+}
+
+.vision-legitimate .badge-dot {
+    background-color: var(--ham);
+}
+
+.vision-phishing .badge-dot {
+    background-color: var(--can-red);
+}
+
+.vision-shot {
+    padding: 14px 16px 0;
+    background-color: var(--can-cream);
+}
+
+.vision-shot img {
+    display: block;
+    width: 100%;
+    max-height: 560px;
+    object-fit: contain;
+    object-position: top center;
+    border: 1px solid var(--border);
+    background-color: #ffffff;
+}
+
+.vision-content {
+    padding: 14px 16px 16px;
+    background-color: var(--can-cream);
+}
+
+.vision-error {
+    padding: 16px;
+}
+
 /* --- Empty / loading / error states (light) --- */
 
 .empty-state {
@@ -736,5 +830,17 @@ body {
     .category-badge {
         font-size: 24px;
     }
-}
 
+    .vision-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .vision-head .result-meta {
+        text-align: left;
+    }
+
+    .vision-verdict {
+        font-size: 24px;
+    }
+}
