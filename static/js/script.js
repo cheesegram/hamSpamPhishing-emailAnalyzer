@@ -167,6 +167,11 @@ function renderResultCard(data) {
             "</div>";
     }
     const confidence = data.confidence || {};
+    let categoryConfidence = Number(confidence[badgeText]);
+    if (isNaN(categoryConfidence)) categoryConfidence = 0;
+    if (categoryConfidence < 0) categoryConfidence = 0;
+    if (categoryConfidence > 100) categoryConfidence = 100;
+    const categoryConfidenceLabel = categoryConfidence.toFixed(1) + "%";
     const meterNames = ["Ham", "Phishing", "Spam"];
     let meterBars = "";
     for (let i = 0; i < meterNames.length; i++) {
@@ -192,7 +197,8 @@ function renderResultCard(data) {
         '<div class="result-card ' + toneClass + '">' +
         '<div class="result-head">' +
         '<span class="category-badge">' +
-        '<span class="badge-dot" aria-hidden="true"></span>' + badgeText +
+        '<span class="badge-dot" aria-hidden="true"></span>' +
+        badgeText + " " + categoryConfidenceLabel +
         "</span>" +
         '<span class="result-meta">ML classification + AI explanation</span>' +
         "</div>" +
@@ -296,18 +302,12 @@ function renderVision(analyses) {
     for (let i = 0; i < analyses.length; i++) {
         const item = analyses[i];
         if (item.error) {
-            cards +=
-                '<div class="vision-item vision-error">' +
-                '<span class="vision-label">Link could not be captured</span>' +
-                '<span class="vision-url">' + escapeHtml(item.url) + "</span>" +
-                '<span class="vision-detail">' + escapeHtml(item.error) + "</span>" +
-                "</div>";
             continue;
         }
         const verdict = String(item.verdict || "Unknown");
         const lower = verdict.toLowerCase();
-        const vLabel = lower === "legitimate" ? "Legitimate" : "Phishing";
-        const vSlug = lower === "legitimate" ? "legitimate" : "phishing";
+        const vLabel = lower === "legitimate" ? "Ham" : "Phishing";
+        const vSlug = lower === "legitimate" ? "ham" : "phishing";
         let pv = Number(item.phishing_probability);
         let lv = Number(item.legitimate_probability);
         if (isNaN(pv)) pv = 0;
@@ -325,6 +325,8 @@ function renderVision(analyses) {
             '<img src="' + item.screenshot + '" alt="Screenshot of ' + escapeHtmlAttr(item.url) + '">' +
             "</div>" +
             '<div class="vision-content">' +
+            '<div class="result-columns">' +
+            '<div class="result-side">' +
             '<span class="block-label">Analysis result</span>' +
             '<div class="meter-list">' +
             '<div class="meter-row"><div class="meter-top">' +
@@ -332,10 +334,23 @@ function renderVision(analyses) {
             '<span class="meter-value">' + pv.toFixed(1) + "%</span>" +
             '</div><div class="meter-track"><div class="meter-fill meter-fill-phishing" style="width: ' + pv.toFixed(1) + '%;"></div></div></div>' +
             '<div class="meter-row"><div class="meter-top">' +
-            '<span class="meter-name meter-ham">Legitimate</span>' +
+            '<span class="meter-name meter-ham">Ham</span>' +
             '<span class="meter-value">' + lv.toFixed(1) + "%</span>" +
             '</div><div class="meter-track"><div class="meter-fill meter-fill-ham" style="width: ' + lv.toFixed(1) + '%;"></div></div></div>' +
-            "</div></div></div>";
+            "</div></div>" +
+            '<div class="result-main">' +
+            '<span class="block-label">Gemini explanation</span>' +
+            '<p class="explanation-text">' +
+            escapeHtml(item.explanation || "No explanation provided.") +
+            "</p></div></div></div></div>";
+    }
+    if (!cards) {
+        visionBox.className = "panel-body vision-box";
+        visionBox.innerHTML =
+            '<div class="empty-state"><span class="empty-icon" aria-hidden="true">&#128065;</span>' +
+            "<strong>No screenshots available</strong>" +
+            "<p>The links could not be captured for analysis.</p></div>";
+        return;
     }
     visionBox.className = "panel-body vision-box";
     visionBox.innerHTML = '<div class="vision-grid">' + cards + "</div>";

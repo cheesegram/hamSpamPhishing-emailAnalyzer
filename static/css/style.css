@@ -419,7 +419,7 @@ body {
     background: none;
     border: none;
     font-family: var(--logo-font);
-    font-size: 30px;
+    font-size: 26px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -628,10 +628,14 @@ body {
 .vision-grid {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    width: 100%;
+    gap: 28px;
 }
 
 .vision-item {
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
     overflow: hidden;
     border: 3px solid var(--can-gold);
     border-radius: var(--radius-sm);
@@ -683,6 +687,10 @@ body {
     background-color: var(--can-red);
 }
 
+.vision-ham .badge-dot {
+    background-color: var(--can-gold);
+}
+
 .vision-shot {
     padding: 14px 16px 0;
     background-color: var(--can-cream);
@@ -699,12 +707,26 @@ body {
 }
 
 .vision-content {
-    padding: 14px 16px 16px;
+    padding: 0;
     background-color: var(--can-cream);
+}
+
+.vision-content .result-columns {
+    padding: 14px 16px 16px;
 }
 
 .vision-error {
     padding: 16px;
+}
+
+.vision-url,
+.vision-detail {
+    display: block;
+    word-break: break-word;
+}
+
+.vision-detail {
+    margin-top: 6px;
 }
 
 /* --- Empty / loading / error states (light) --- */
