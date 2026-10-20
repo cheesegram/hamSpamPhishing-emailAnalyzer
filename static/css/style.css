@@ -304,10 +304,14 @@ body {
     color: var(--text);
     resize: vertical;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    word-break: break-word;
+    overflow-y: auto;
 }
 
-.email-textarea::placeholder {
+.email-textarea:empty::before {
+    content: attr(data-placeholder);
     color: var(--text-faint);
+    pointer-events: none;
 }
 
 .email-textarea:focus {
@@ -316,35 +320,32 @@ body {
     box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.sample-row {
-    margin-top: 16px;
+/* Ensure no pasted cards, containers, custom fonts or colors take over */
+.email-textarea * {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+    color: inherit !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-decoration: none !important;
 }
 
-.chip-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+/* Display hyperlinks cleanly with theme colors and underline */
+.email-textarea a {
+    color: var(--can-navy-deep) !important;
+    text-decoration: underline !important;
+    font-weight: 600 !important;
+    word-break: break-all !important;
+    cursor: pointer !important;
 }
 
-.sample-chip {
-    padding: 6px 12px;
-    border: 2px solid var(--can-navy);
-    border-radius: 999px;
-    background-color: var(--can-navy);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--can-yellow);
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.sample-chip:hover {
-    border-color: var(--can-navy-deep);
-    background-color: var(--can-navy-deep);
-    color: #ffffff;
+.email-textarea a:hover {
+    color: var(--accent) !important;
 }
 
 .form-footer {
