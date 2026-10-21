@@ -178,6 +178,86 @@ GEMINI_MODEL = "gemini-3.1-flash-lite"
 
 
 # ============================================================
+# 6b. OPTIONAL LANGUAGE DETECTION
+#
+# langdetect is used to decide whether an email is already
+# written in English. English emails skip the Gemini
+# translation call completely, which is faster and cheaper.
+#
+# If the package is missing, the app still starts normally
+# and every email is translated as before.
+# ============================================================
+
+try:
+    from langdetect import (
+        detect_langs,
+        DetectorFactory,
+        LangDetectException
+    )
+
+    # Fix the random seed so the same email always
+    # produces the same detected language.
+    DetectorFactory.seed = 0
+
+    LANG_DETECT_AVAILABLE = True
+
+except ImportError:
+    LANG_DETECT_AVAILABLE = False
+    # The app keeps working without language detection.
+
+
+LANGUAGE_MIN_CHARACTERS = 30
+# Short texts are not reliable enough to judge the language.
+# They are always sent to Gemini for translation.
+
+LANGUAGE_MIN_PART_CHARACTERS = 35
+# The same idea, but for the individual parts of an email.
+# This value is larger than the whole email limit because
+# a part is only used to look for a clearly foreign section.
+# Short parts often confuse the detector, for example
+# "For info, email our desk." can be read as Norwegian.
+
+LANGUAGE_MIN_SCRIPT_CHARACTERS = 3
+# A part written in a script that is not based on the Latin
+# alphabet, such as Chinese or Cyrillic, is recognised by
+# these characters. Such a part is always foreign, so it is
+# judged even when it is short. Such scripts are easy to
+# recognise, so they do not need as much text as a
+# Latin-script language.
+
+LANGUAGE_MIN_CONFIDENCE = 0.80
+# The whole email must be detected as English with at least
+# this much confidence before the translation step is skipped.
+# A wrong "this is English" guess would feed untranslated
+# text to an English-only model, so the threshold is strict.
+
+LANGUAGE_MAX_ENGLISH_SHARE = 0.20
+# A part of the email counts as foreign when the word
+# "English" does not appear among the detected languages
+# with a meaningful share. The share is compared against
+# this value, so a clearly foreign part is always
+# translated, even when two other languages compete for
+# the same text and no single one wins clearly.
+
+SENTENCE_BOUNDARY_PATTERN = re.compile(
+    r"(?<=[.!?;:\n])\s+"
+)
+# Splits an email into sentence-like parts for the mixed
+# language check.
+
+NON_LATIN_PATTERN = re.compile(
+    r"[\u0400-\u04FF\u0370-\u03FF"
+    r"\u4E00-\u9FFF\u3040-\u30FF"
+    r"\u0600-\u06FF\u0590-\u05FF"
+    r"\u0750-\u077F]"
+)
+# Matches characters from scripts that are not based on the
+# Latin alphabet, such as Cyrillic, Greek, Chinese,
+# Japanese, Korean, Arabic and Hebrew.
+# Text in these scripts is never English.
+
+
+# ============================================================
 # 7. TRANSLATION FUNCTION
 #
 # Defining this function does not translate anything yet.
@@ -222,6 +302,127 @@ Instructions:
 
     # Send the English translation back to predict().
     return translated_email
+
+
+# ============================================================
+# 7b. LANGUAGE CHECK FUNCTION
+#
+# This function only decides whether the email is already
+# in English. It never translates and never classifies.
+# ============================================================
+
+def detect_language(text):
+    # Returns a list of (language_code, probability) pairs
+    # for the ranked language guesses.
+    # The list is empty when the language cannot be decided.
+
+    if not LANG_DETECT_AVAILABLE:
+        return []
+
+    try:
+        # Get the ranked list of detected languages.
+        candidates = detect_langs(text)
+
+    except LangDetectException:
+        # "No features in text" happens for numbers or symbols.
+        return []
+
+    except Exception as error:
+        # Any unexpected failure must not break the request.
+        print("Language detection error:", error)
+        return []
+
+    return [(item.lang, item.prob) for item in candidates]
+
+
+def english_share(candidates):
+    # Returns the share of the text that looks English.
+    # A share of 0.0 means English was not detected at all.
+
+    for code, probability in candidates:
+        if code == "en":
+            return probability
+
+    return 0.0
+
+
+def split_into_parts(text):
+    # Splits an email into sentence-like parts.
+    # Parts that are too short to judge are removed,
+    # because short text gives unreliable language results.
+
+    parts = []
+
+    for chunk in SENTENCE_BOUNDARY_PATTERN.split(text):
+        cleaned = chunk.strip()
+
+        if not cleaned:
+            continue
+
+        # A part written in a non-Latin script is always
+        # foreign, so it is kept even when it is short.
+        if len(NON_LATIN_PATTERN.findall(cleaned)) >= LANGUAGE_MIN_SCRIPT_CHARACTERS:
+            parts.append(cleaned)
+            continue
+
+        if len(cleaned) >= LANGUAGE_MIN_PART_CHARACTERS:
+            parts.append(cleaned)
+
+    return parts
+
+
+def is_english_email(email):
+    # Returns True only when the email is confidently English.
+    # Any doubt means "not English", so the email is translated.
+
+    if not LANG_DETECT_AVAILABLE:
+        # Without the library, always use the translation path.
+        return False
+
+    text = (email or "").strip()
+
+    # Very short texts cannot be judged reliably.
+    if len(text) < LANGUAGE_MIN_CHARACTERS:
+        return False
+
+    # Step 1: check the language of the whole email.
+    whole = detect_language(text)
+
+    if not whole:
+        # The language could not be detected at all.
+        return False
+
+    if whole[0][0] != "en":
+        # The email is clearly not English.
+        return False
+
+    if whole[0][1] < LANGUAGE_MIN_CONFIDENCE:
+        # The English verdict is not strong enough.
+        return False
+
+    # Step 2: check the parts of the email separately.
+    # A mixed email can look English as a whole, for example
+    # when the English part is longer than the foreign part.
+    parts = split_into_parts(text)
+
+    for part in parts:
+        candidates = detect_language(part)
+
+        if not candidates:
+            # This part has no usable language features.
+            # It is ignored rather than blocking the skip.
+            continue
+
+        if english_share(candidates) > LANGUAGE_MAX_ENGLISH_SHARE:
+            # This part is mostly English, so it is fine.
+            continue
+
+        # This part is clearly not English, so the whole
+        # email must go through the translation step.
+        return False
+
+    # Every part is English, so no translation is needed.
+    return True
 
 
 # ============================================================
@@ -661,10 +862,20 @@ def predict():
 
     # --------------------------------------------------------
     # 11.3 TRANSLATE THE EMAIL INTO ENGLISH
+    #
+    # An email that is already in English skips this step
+    # completely. It is used as-is by the model.
     # --------------------------------------------------------
 
     try:
-        translated_email = translate_to_english(email)
+        if is_english_email(email):
+            # The email is already English, so no translation
+            # request is sent to Gemini.
+            translated_email = email
+
+        else:
+            # The email is not English, so translate it first.
+            translated_email = translate_to_english(email)
 
     except Exception as error:
         # Print the technical error only in the terminal.
