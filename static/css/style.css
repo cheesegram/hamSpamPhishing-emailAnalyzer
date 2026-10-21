@@ -304,16 +304,48 @@ body {
     color: var(--text);
     resize: vertical;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    word-break: break-word;
+    overflow-y: auto;
 }
 
-.email-textarea::placeholder {
+.email-textarea:empty::before {
+    content: attr(data-placeholder);
     color: var(--text-faint);
+    pointer-events: none;
 }
 
 .email-textarea:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Ensure no pasted cards, containers, custom fonts or colors take over */
+.email-textarea * {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+    color: inherit !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-decoration: none !important;
+}
+
+/* Display hyperlinks cleanly with theme colors and underline */
+.email-textarea a {
+    color: var(--can-navy-deep) !important;
+    text-decoration: underline !important;
+    font-weight: 600 !important;
+    word-break: break-all !important;
+    cursor: pointer !important;
+}
+
+.email-textarea a:hover {
+    color: var(--accent) !important;
 }
 
 .sample-row {

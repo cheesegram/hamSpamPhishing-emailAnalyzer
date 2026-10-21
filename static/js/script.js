@@ -4,94 +4,285 @@ const emailLinks = document.getElementById("emailLinks");
 const resultBox = document.getElementById("resultBox");
 const visionBox = document.getElementById("visionBox");
 const analyzeButton = document.getElementById("analyzeButton");
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text == null ? "" : String(text);
+    return div.innerHTML;
+}
+
+function escapeHtmlAttr(text) {
+    return String(text == null ? "" : text)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+const BLOCK_TAGS = {
+    P: true, DIV: true, TR: true, LI: true,
+    H1: true, H2: true, H3: true, H4: true, H5: true, H6: true,
+    BLOCKQUOTE: true, SECTION: true, ARTICLE: true,
+    HEADER: true, FOOTER: true, TABLE: true, UL: true, OL: true
+};
+
+function endsWithBreak(chunks) {
+    for (let i = chunks.length - 1; i >= 0; i--) {
+        const c = String(chunks[i] || "").trim();
+        if (!c) continue;
+        return /(<br\s*\/?>)$/i.test(c);
+    }
+    return true;
+}
+
+function linkifyText(text) {
+    if (!text) return "";
+    const urlPattern = /(https?:\/\/[^\s<>'\"()]+|www\.[^\s<>'\"()]+)/gi;
+    let result = "";
+    let lastIndex = 0;
+    let match;
+    while ((match = urlPattern.exec(text)) !== null) {
+        const matchStart = match.index;
+        const matchEnd = matchStart + match[0].length;
+        if (matchStart > lastIndex) {
+            result += escapeHtml(text.slice(lastIndex, matchStart));
+        }
+        let rawUrl = match[0];
+        let trailingPunct = "";
+        const punctMatch = rawUrl.match(/[.,;:!?]+$/);
+        if (punctMatch) {
+            trailingPunct = punctMatch[0];
+            rawUrl = rawUrl.slice(0, -trailingPunct.length);
+        }
+        let href = rawUrl;
+        if (/^www\./i.test(href)) {
+            href = "http://" + href;
+        }
+        harvestLink(href);
+        result += '<a href="' + escapeHtmlAttr(href) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(rawUrl) + '</a>' + escapeHtml(trailingPunct);
+        lastIndex = matchEnd;
+    }
+    if (lastIndex < text.length) {
+        result += escapeHtml(text.slice(lastIndex));
+    }
+    return result;
+}
+
+function formatPlainText(text) {
+    if (!text) return "";
+    const lines = text.split(/\r\n|\r|\n/);
+    const converted = lines.map(function (line) {
+        return linkifyText(line);
+    });
+    return converted.join("<br>");
+}
+
+function sanitizePastedContent(pastedHtml, rawText) {
+    if (!pastedHtml || typeof pastedHtml !== "string" || !pastedHtml.trim()) {
+        return formatPlainText(rawText || "");
+    }
+
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(pastedHtml, "text/html");
+        const root = doc.body;
+
+        // Replace images with their alt or title text, otherwise remove them
+        const images = root.querySelectorAll("img");
+        images.forEach(function (img) {
+            const alt = (img.getAttribute("alt") || img.getAttribute("title") || "").trim();
+            if (alt) {
+                img.parentNode.replaceChild(doc.createTextNode(" " + alt + " "), img);
+            } else {
+                img.remove();
+            }
+        });
+
+        // Remove scripts, styles, embedded frames, forms, svg, canvas, audio, video
+        const forbidden = root.querySelectorAll(
+            "script, style, link, meta, iframe, object, embed, form, input, button, select, textarea, svg, canvas, audio, video"
+        );
+        forbidden.forEach(function (el) {
+            el.remove();
+        });
+
+        const chunks = [];
+
+        function walk(node) {
+            if (!node) return;
+
+            if (node.nodeType === Node.TEXT_NODE) {
+                const val = node.nodeValue || "";
+                if (val.trim() === "") {
+                    if (val.length > 0 && !endsWithBreak(chunks)) {
+                        chunks.push(" ");
+                    }
+                } else {
+                    const lines = val.split(/\r\n|\r|\n/);
+                    if (lines.length > 1) {
+                        lines.forEach(function (line, idx) {
+                            if (idx > 0 && !endsWithBreak(chunks)) {
+                                chunks.push("<br>");
+                            }
+                            const linked = linkifyText(line);
+                            if (linked) {
+                                chunks.push(linked);
+                            }
+                        });
+                    } else {
+                        chunks.push(linkifyText(val));
+                    }
+                }
+                return;
+            }
+
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+            const tag = node.tagName.toUpperCase();
+
+            if (tag === "BR") {
+                chunks.push("<br>");
+                return;
+            }
+
+            if (tag === "A") {
+                const rawHref = (node.getAttribute("href") || "").trim();
+                let validHref = "";
+                if (/^https?:\/\//i.test(rawHref) || /^mailto:/i.test(rawHref)) {
+                    validHref = rawHref;
+                } else if (/^www\./i.test(rawHref)) {
+                    validHref = "http://" + rawHref;
+                }
+
+                const textContent = (node.textContent || "").trim();
+
+                if (validHref) {
+                    harvestLink(validHref);
+                    const displayText = textContent || validHref;
+                    chunks.push(
+                        '<a href="' + escapeHtmlAttr(validHref) + '" target="_blank" rel="noopener noreferrer">' +
+                        escapeHtml(displayText) +
+                        '</a>'
+                    );
+                } else if (textContent) {
+                    chunks.push(escapeHtml(textContent));
+                }
+                return;
+            }
+
+            const isBlock = !!BLOCK_TAGS[tag];
+            if (isBlock && chunks.length > 0 && !endsWithBreak(chunks)) {
+                chunks.push("<br>");
+            }
+
+            const beforeLen = chunks.length;
+            const children = Array.from(node.childNodes);
+            for (let i = 0; i < children.length; i++) {
+                walk(children[i]);
+            }
+
+            if (isBlock && chunks.length > beforeLen && !endsWithBreak(chunks)) {
+                chunks.push("<br>");
+            }
+        }
+
+        walk(root);
+
+        let cleanHtml = chunks.join("");
+        cleanHtml = cleanHtml.replace(/[ \t]{2,}/g, " ");
+        cleanHtml = cleanHtml.replace(/(<br\s*\/?>\s*){3,}/gi, "<br><br>");
+        cleanHtml = cleanHtml.replace(/^(\s*<br\s*\/?>\s*)+|(\s*<br\s*\/?>\s*)+$/gi, "").trim();
+
+        if (!cleanHtml) {
+            return formatPlainText(rawText || "");
+        }
+        return cleanHtml;
+    } catch (e) {
+        return formatPlainText(rawText || "");
+    }
+}
+
+function insertCleanContent(cleanHtml) {
+    if (!cleanHtml) return;
+
+    emailText.focus();
+    const selection = window.getSelection();
+    let range;
+    if (selection && selection.rangeCount > 0 && emailText.contains(selection.anchorNode)) {
+        range = selection.getRangeAt(0);
+        range.deleteContents();
+    } else {
+        range = document.createRange();
+        range.selectNodeContents(emailText);
+        range.collapse(false);
+    }
+
+    try {
+        const fragment = document.createRange().createContextualFragment(cleanHtml);
+        const lastNode = fragment.lastChild;
+        range.insertNode(fragment);
+        if (lastNode && selection) {
+            const nextRange = document.createRange();
+            nextRange.setStartAfter(lastNode);
+            nextRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(nextRange);
+        }
+    } catch (err) {
+        emailText.innerHTML = cleanHtml;
+    }
+
+    harvestLinks();
+}
+
+emailText.addEventListener("paste", function (event) {
+    const clipboardData = event.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    const rawText = clipboardData.getData("text/plain") || "";
+    const pastedHtml = clipboardData.getData("text/html") || "";
+
+    if (!rawText && !pastedHtml) return;
+
+    event.preventDefault();
+    const cleanHtml = sanitizePastedContent(pastedHtml, rawText);
+    insertCleanContent(cleanHtml);
+});
+
+emailText.addEventListener("drop", function (event) {
+    const dataTransfer = event.dataTransfer;
+    if (!dataTransfer) return;
+
+    const rawText = dataTransfer.getData("text/plain") || "";
+    const pastedHtml = dataTransfer.getData("text/html") || "";
+
+    if (!rawText && !pastedHtml) return;
+
+    event.preventDefault();
+    const cleanHtml = sanitizePastedContent(pastedHtml, rawText);
+    insertCleanContent(cleanHtml);
+});
+
+emailText.addEventListener("input", function () {
+    harvestLinks();
+});
+
+emailText.addEventListener("click", function (event) {
+    const anchor = event.target.closest("a");
+    if (anchor && (event.ctrlKey || event.metaKey)) {
+        window.open(anchor.href, "_blank", "noopener,noreferrer");
+    }
+});
+
 const sampleChips = document.querySelectorAll(".sample-chip");
 
 sampleChips.forEach(function (chip) {
     chip.addEventListener("click", function () {
-        const sampleHtml = chip.getAttribute("data-email");
-        if (sampleHtml) {
-            emailText.innerHTML = sampleHtml;
-            emailText.focus();
-            harvestLinks();
-        }
+        const sampleText = chip.getAttribute("data-email");
+        if (!sampleText) return;
+        emailText.innerHTML = linkifyText(sampleText);
+        harvestLinks();
     });
-});
-
-emailText.addEventListener("paste", function (event) {
-    const clipboardData = event.clipboardData;
-    const range = document.createRange();
-    range.selectNodeContents(emailText);
-    range.collapse(false);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    const rawText = clipboardData ? clipboardData.getData("text/plain") : "";
-    if (!rawText) {
-        return;
-    }
-    event.preventDefault();
-    const pastedHtml = clipboardData ? clipboardData.getData("text/html") : "";
-    const urlPattern = /(https?:\/\/[^\s<>'\"()]+|www\.[^\s<>'\"()]+)/gi;
-    const pastedLinks = [];
-    let match;
-    while ((match = urlPattern.exec(rawText)) !== null) {
-        const url = match[1].replace(/[.,;:!?]+$/, "").trim();
-        if (url) {
-            pastedLinks.push(url);
-        }
-    }
-    let html = "";
-    if (pastedHtml) {
-        const container = document.createElement("div");
-        container.innerHTML = pastedHtml;
-        const unsafeElements = container.querySelectorAll(
-            "script, style, iframe, object, embed, form"
-        );
-        for (let i = 0; i < unsafeElements.length; i++) {
-            unsafeElements[i].remove();
-        }
-        const elements = container.querySelectorAll("*");
-        for (let i = 0; i < elements.length; i++) {
-            const element = elements[i];
-            const attributes = Array.from(element.attributes);
-            for (let j = 0; j < attributes.length; j++) {
-                const attribute = attributes[j];
-                if (attribute.name.toLowerCase().indexOf("on") === 0) {
-                    element.removeAttribute(attribute.name);
-                }
-            }
-            if (element.tagName.toLowerCase() === "a") {
-                const href = element.getAttribute("href") || "";
-                if (!/^https?:\/\//i.test(href) && !/^www\./i.test(href)) {
-                    element.removeAttribute("href");
-                } else if (/^www\./i.test(href)) {
-                    element.setAttribute("href", "http://" + href);
-                }
-            }
-        }
-        if (container.querySelector("a[href]")) {
-            html = container.innerHTML;
-        } else {
-            html = rawText.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
-            html = html.replace(urlPattern, function (matched) {
-                const clean = matched.replace(/[.,;:!?]+$/, "").trim();
-                return '<a href="' + escapeHtmlAttr(clean) + '">' + clean + "</a>";
-            });
-        }
-    } else {
-        html = rawText.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
-        html = html.replace(urlPattern, function (matched) {
-            const clean = matched.replace(/[.,;:!?]+$/, "").trim();
-            return '<a href="' + escapeHtmlAttr(clean) + '">' + clean + "</a>";
-        });
-    }
-    try {
-        const fragment = range.createContextualFragment(html);
-        range.insertNode(fragment);
-    } catch (error) {
-        emailText.innerHTML = rawText;
-    }
-    pastedLinks.forEach(function (url) { harvestLink(url); });
 });
 
 function harvestLink(url) {
@@ -128,20 +319,6 @@ function harvestLinks() {
     while ((anchor = anchorPattern.exec(source)) !== null) {
         harvestLink(anchor[2]);
     }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function escapeHtmlAttr(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
 }
 
 function renderResultCard(data) {
