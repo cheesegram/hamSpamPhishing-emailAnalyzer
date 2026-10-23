@@ -349,7 +349,7 @@ function renderResultCard(data) {
     if (categoryConfidence < 0) categoryConfidence = 0;
     if (categoryConfidence > 100) categoryConfidence = 100;
     const categoryConfidenceLabel = categoryConfidence.toFixed(1) + "%";
-    const meterNames = ["Ham", "Phishing", "Spam"];
+    const meterNames = ["Ham", "Spam", "Phishing"];
     let meterBars = "";
     for (let i = 0; i < meterNames.length; i++) {
         const name = meterNames[i];
@@ -507,13 +507,13 @@ function renderVision(analyses) {
             '<span class="block-label">Analysis result</span>' +
             '<div class="meter-list">' +
             '<div class="meter-row"><div class="meter-top">' +
-            '<span class="meter-name meter-phishing">Phishing</span>' +
-            '<span class="meter-value">' + pv.toFixed(1) + "%</span>" +
-            '</div><div class="meter-track"><div class="meter-fill meter-fill-phishing" style="width: ' + pv.toFixed(1) + '%;"></div></div></div>' +
-            '<div class="meter-row"><div class="meter-top">' +
             '<span class="meter-name meter-ham">Ham</span>' +
             '<span class="meter-value">' + lv.toFixed(1) + "%</span>" +
             '</div><div class="meter-track"><div class="meter-fill meter-fill-ham" style="width: ' + lv.toFixed(1) + '%;"></div></div></div>' +
+            '<div class="meter-row"><div class="meter-top">' +
+            '<span class="meter-name meter-phishing">Phishing</span>' +
+            '<span class="meter-value">' + pv.toFixed(1) + "%</span>" +
+            '</div><div class="meter-track"><div class="meter-fill meter-fill-phishing" style="width: ' + pv.toFixed(1) + '%;"></div></div></div>' +
             "</div></div>" +
             '<div class="result-main">' +
             '<span class="block-label">Gemini explanation</span>' +
